@@ -12,10 +12,43 @@ type Profile = {
   statusMessage?: string;
 };
 
+type S3File = {
+  fileName: string;
+  url: string;
+};
+
 export default function LoginPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string>('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // -- (เพิ่ม State นี้) --
+  const [userFiles, setUserFiles] = useState<S3File[]>([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+
+  // -- (เพิ่มฟังก์ชันนี้) --
+  // ฟังก์ชันสำหรับดึงไฟล์จาก S3 โดยใช้ userId
+  const fetchUserFiles = async (userId: string) => {
+    console.log('Fetching files for user:', userId);
+    setFilesLoading(true);
+    try {
+      // ยิงไปที่ API Route ใหม่ที่เราสร้าง โดยส่ง userId ไปด้วย
+      const response = await fetch(`/api/get-user-files?userId=${userId}`);
+      const data = await response.json();
+
+      if (data.files) {
+        setUserFiles(data.files);
+        console.log('Got files:', data.files);
+      } else {
+        console.error("Failed to get S3 files:", data.error);
+        setError(`Failed to load files: ${data.error}`);
+      }
+    } catch (e: any) {
+      console.error("Error fetching S3 files:", e);
+      setError(`Error fetching files: ${e.message}`);
+    }
+    setFilesLoading(false);
+  };
 
   useEffect(() => {
     // ฟังก์ชันสำหรับ Initialize LIFF
@@ -46,6 +79,8 @@ export default function LoginPage() {
           console.log('Full Profile Object:', userProfile);
           console.log('User ID:', userProfile.userId);
           // -----------------------
+
+          await fetchUserFiles(userProfile.userId);
 
         } else {
           console.log('User is NOT logged in.'); // Debug
@@ -142,14 +177,15 @@ export default function LoginPage() {
     <main 
       className="flex min-h-screen flex-col items-center justify-center 
                  bg-gradient-to-br from-green-200 via-blue-200 to-purple-200">
-      <div className="w-full max-w-md p-8 mt-6 space-y-4 bg-white/50 rounded-lg shadow-sm text-center">
+      
+      {/* ส่วนแสดงโปรไฟล์ (เหมือนเดิม) */}
+      <div className="w-full max-w-md p-8 space-y-4 bg-white/50 rounded-lg shadow-sm text-center">
         <h2 className="text-2xl font-semibold text-gray-800">ยินดีต้อนรับ!</h2>
         {profile ? (
           <>
             <img src={profile.pictureUrl} alt="Profile" className="w-24 h-24 rounded-full mx-auto" />
             <p><strong>Display Name:</strong> {profile.displayName}</p>
             <p><strong>User ID:</strong> {profile.userId}</p>
-            <p><strong>Status Message:</strong> {profile.statusMessage || 'N/A'}</p>
           </>
         ) : (
           <p>กำลังโหลดข้อมูล...</p>
@@ -161,6 +197,35 @@ export default function LoginPage() {
           ออกจากระบบ
         </button>
       </div>
+
+      {/* --- (ส่วนแสดงรายการไฟล์ที่เพิ่มเข้ามา) --- */}
+      <div className="w-full max-w-md p-8 mt-4 space-y-4 bg-white/50 rounded-lg shadow-sm">
+        <h3 className="text-xl font-semibold text-gray-800">ไฟล์ของคุณจาก S3</h3>
+        {filesLoading && (
+          <p className="text-gray-600">กำลังค้นหาไฟล์...</p>
+        )}
+        
+        {!filesLoading && userFiles.length === 0 && (
+          <p className="text-gray-500">ไม่พบไฟล์ในโฟลเดอร์ของคุณ</p>
+        )}
+
+        {userFiles.length > 0 && (
+          <ul className="space-y-2">
+            {userFiles.map((file) => (
+              <li key={file.fileName}>
+                <a
+                  href={file.url}
+                  download // คุณสมบัตินี้ช่วย แต่ S3 presigned URL (ResponseContentDisposition) คือตัวที่ทำงานจริง
+                  className="block w-full px-4 py-2 text-left text-white bg-blue-500 rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  📄 {file.fileName} (ดาวน์โหลด)
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
     </main>
   );
 }
