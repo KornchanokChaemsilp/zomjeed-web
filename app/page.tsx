@@ -176,7 +176,7 @@ export default function LoginPage() {
   return (
     <main 
       className="flex min-h-screen flex-col items-center justify-center 
-                 bg-gradient-to-br from-green-200 via-blue-200 to-purple-200">
+                 bg-gradient-to-br from-green-200 via-blue-200 to-purple-200 p-6">
       
       {/* ส่วนแสดงโปรไฟล์ (เหมือนเดิม) */}
       <div className="w-full max-w-md p-8 space-y-4 bg-white/50 rounded-lg shadow-sm text-center">
@@ -199,7 +199,7 @@ export default function LoginPage() {
       </div>
 
       {/* --- (ส่วนแสดงรายการไฟล์ที่เพิ่มเข้ามา) --- */}
-      <div className="w-full max-w-md p-8 mt-4 space-y-4 bg-white/50 rounded-lg shadow-sm">
+      <div className="w-full max-w-md mt-6 p-8 space-y-4 bg-white/50 rounded-lg shadow-sm">
         <h3 className="text-xl font-semibold text-gray-800">ไฟล์ของคุณจาก S3</h3>
         {filesLoading && (
           <p className="text-gray-600">กำลังค้นหาไฟล์...</p>
@@ -210,19 +210,37 @@ export default function LoginPage() {
         )}
 
         {userFiles.length > 0 && (
-          <ul className="space-y-2">
-            {userFiles.map((file) => (
-              <li key={file.fileName}>
-                <a
-                  href={file.url}
-                  download // คุณสมบัตินี้ช่วย แต่ S3 presigned URL (ResponseContentDisposition) คือตัวที่ทำงานจริง
-                  className="block w-full px-4 py-2 text-left text-white bg-blue-500 rounded-md hover:bg-blue-600 transition-colors"
-                >
-                  📄 {file.fileName} (ดาวน์โหลด)
-                </a>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">ชื่อไฟล์</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">ดาวน์โหลด</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {userFiles.map((file, index) => (
+                  <tr key={file.fileName} className="hover:bg-blue-50 transition-colors">
+                    <td className="px-4 py-3 text-sm text-gray-800">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">📄</span>
+                        <span>{file.fileName}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <a
+                        href={file.url}
+                        download
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition-colors"
+                      >
+                        ดาวน์โหลด
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
