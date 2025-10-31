@@ -1,10 +1,10 @@
 // app/api/get-user-files/route.ts
 
-import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, ListObjectsV2Command, _Object } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 
-// 1. ตั้งค่า S3 Client ให้ใช้กุญแจชั่วคราว (เหมือนเดิม)
+// 1. ตั้งค่า S3 Client (เหมือนเดิม)
 const s3Client = new S3Client({
   region: process.env.AWS_REGION!,
   credentials: {
@@ -16,9 +16,17 @@ const s3Client = new S3Client({
 
 const BUCKET_NAME = process.env.MY_S3_BUCKET_NAME!;
 
+// --- (ส่วนที่เพิ่ม) Helper Functions ---
+const bytesToMB = (bytes: number) => (bytes / (1024 * 1024)).toFixed(2);
+
+const getFileExtension = (fileName: string) => {
+  const parts = fileName.split('.');
+  return parts.length > 1 ? parts.pop()! : 'unknown';
+};
+// ------------------------------------
+
 export async function GET(request: Request) {
   try {
-    // 2. ดึง userId จาก query string (เช่น ?userId=U123...)
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -26,43 +34,70 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
-    // 3. (S3 Call 1) - List ไฟล์ทั้งหมดในโฟลเดอร์ของ User
-    console.log(`Listing files for prefix: ${userId}/`);
+    // 2. List ไฟล์ (เหมือนเดิม)
     const listCommand = new ListObjectsV2Command({
       Bucket: BUCKET_NAME,
-      Prefix: `${userId}/`, // <-- ใช้ userId เป็นชื่อโฟลเดอร์
+      Prefix: `${userId}/`,
     });
 
     const listResult = await s3Client.send(listCommand);
+    const allFiles = listResult.Contents || [];
+    
+    // กรองโฟลเดอร์เปล่าๆ ออก
+    const validFiles = allFiles.filter(file => file.Size! > 0);
 
-    if (!listResult.Contents || listResult.Contents.length === 0) {
-      return NextResponse.json({ files: [] }); // คืนค่าอาร์เรย์ว่าง ถ้าไม่มีไฟล์
+    if (validFiles.length === 0) {
+      // ถ้าไม่มีไฟล์ ก็ส่งค่าสถิติเริ่มต้นกลับไป
+      return NextResponse.json({ 
+        stats: {
+          totalCount: 0,
+          totalSizeMB: 0,
+          lastModified: null,
+          fileTypes: {}
+        },
+        files: [] 
+      });
     }
 
-    // 4. (S3 Call 2) - สร้าง Presigned URL สำหรับ *ทุก* ไฟล์ที่เจอ
-    const files = await Promise.all(
-      listResult.Contents
-        .filter(file => file.Size! > 0) // กรองเอาโฟลเดอร์เปล่าๆ ออก
-        .map(async (file) => {
-          const key = file.Key!;
-          
-          const getCommand = new GetObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-            // (สำคัญ!) บังคับให้เป็น "ดาวน์โหลด" แทนการ "เปิด" ในเบราว์เซอร์
-            ResponseContentDisposition: 'attachment', 
-          });
+    // --- 3. (ส่วนที่เพิ่ม) คำนวณสถิติ ---
+    const totalCount = validFiles.length;
+    
+    const totalSizeInBytes = validFiles.reduce((sum, file) => sum + file.Size!, 0);
+    const totalSizeMB = bytesToMB(totalSizeInBytes);
+    
+    const lastModified = new Date(
+      Math.max(...validFiles.map(file => file.LastModified!.getTime()))
+    ).toISOString();
+    
+    const fileTypes = validFiles.reduce((acc, file) => {
+      const ext = getFileExtension(file.Key!);
+      acc[ext] = (acc[ext] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const stats = { totalCount, totalSizeMB, lastModified, fileTypes };
+    // ------------------------------------
 
-          const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 }); // 1 ชั่วโมง
-          
-          return {
-            fileName: key.split('/').pop()!, // เอาเฉพาะชื่อไฟล์ (เช่น 'report.pdf')
-            url: url,
-          };
-        })
+    // 4. สร้าง Presigned URLs (เหมือนเดิม)
+    const files = await Promise.all(
+      validFiles.map(async (file) => {
+        const key = file.Key!;
+        const getCommand = new GetObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: key,
+          ResponseContentDisposition: 'attachment', 
+        });
+        const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
+        
+        return {
+          fileName: key.split('/').pop()!,
+          url: url,
+        };
+      })
     );
 
-    return NextResponse.json({ files: files });
+    // 5. ส่งทั้ง "stats" และ "files" กลับไป
+    return NextResponse.json({ stats, files });
 
   } catch (error) {
     console.error("Error in get-user-files API:", error);
