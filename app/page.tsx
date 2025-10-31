@@ -17,6 +17,14 @@ type S3File = {
   url: string;
 };
 
+// --- Type สำหรับสถิติ ---
+type Stats = {
+  totalCount: number;
+  totalSizeMB: number;
+  lastModified: string | null;
+  fileTypes: Record<string, number>;
+};
+
 export default function LoginPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string>('');
@@ -25,6 +33,9 @@ export default function LoginPage() {
   // -- (เพิ่ม State นี้) --
   const [userFiles, setUserFiles] = useState<S3File[]>([]);
   const [filesLoading, setFilesLoading] = useState(false);
+
+  // --- (ส่วนที่เพิ่ม) State สำหรับสถิติ ---
+  const [stats, setStats] = useState<Stats | null>(null);
 
   // -- (เพิ่มฟังก์ชันนี้) --
   // ฟังก์ชันสำหรับดึงไฟล์จาก S3 โดยใช้ userId
@@ -36,11 +47,13 @@ export default function LoginPage() {
       const response = await fetch(`/api/get-user-files?userId=${userId}`);
       const data = await response.json();
 
-      if (data.files) {
+      if (data.files && data.stats) {
         setUserFiles(data.files);
+        setStats(data.stats); // <--- เก็บสถิติ
+        console.log('Got stats:', data.stats);
         console.log('Got files:', data.files);
       } else {
-        console.error("Failed to get S3 files:", data.error);
+        console.error("Failed to get S3 data:", data.error);
         setError(`Failed to load files: ${data.error}`);
       }
     } catch (e: any) {
@@ -171,7 +184,6 @@ export default function LoginPage() {
     );
   }
 
-  // ถ้
   // ถ้าล็อกอินแล้ว (isLoggedIn === true) ให้แสดงข้อมูลโปรไฟล์
   return (
     <main 
@@ -196,6 +208,51 @@ export default function LoginPage() {
         >
           ออกจากระบบ
         </button>
+      </div>
+
+      {/* --- (ส่วนแสดงสถิติที่เพิ่มเข้ามา) --- */}
+      <div className="w-full max-w-md mt-6 p-8 space-y-4 bg-white/50 rounded-lg shadow-sm">
+        <h3 className="text-xl font-semibold text-gray-800">Dashboard สถิติ</h3>
+        {filesLoading && <p className="text-gray-600">กำลังโหลดสถิติ...</p>}
+        {stats && !filesLoading && (
+          <div className="grid grid-cols-2 gap-4">
+            {/* Card: จำนวนไฟล์ */}
+            <div className="bg-white/70 p-4 rounded-lg shadow">
+              <div className="text-sm font-medium text-gray-500">จำนวนไฟล์ทั้งหมด</div>
+              <div className="text-3xl font-bold text-blue-600">{stats.totalCount}</div>
+            </div>
+            
+            {/* Card: ขนาดรวม */}
+            <div className="bg-white/70 p-4 rounded-lg shadow">
+              <div className="text-sm font-medium text-gray-500">ขนาดไฟล์รวม</div>
+              <div className="text-3xl font-bold text-green-600">{stats.totalSizeMB} <span className="text-xl">MB</span></div>
+            </div>
+            
+            {/* Card: ประเภทไฟล์ */}
+            <div className="col-span-2 bg-white/70 p-4 rounded-lg shadow">
+              <div className="text-sm font-medium text-gray-500">ประเภทไฟล์</div>
+              {Object.keys(stats.fileTypes).length > 0 ? (
+                <ul className="list-disc list-inside mt-2">
+                  {Object.entries(stats.fileTypes).map(([ext, count]) => (
+                    <li key={ext} className="text-gray-700">
+                      <span className="font-semibold uppercase">{ext}</span>: {count} ไฟล์
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">ไม่พบข้อมูล</p>
+              )}
+            </div>
+
+            {/* Card: อัปเดตล่าสุด */}
+            <div className="col-span-2 bg-white/70 p-4 rounded-lg shadow">
+              <div className="text-sm font-medium text-gray-500">ไฟล์ล่าสุด</div>
+              <div className="text-lg font-semibold text-gray-800">
+                {stats.lastModified ? new Date(stats.lastModified).toLocaleString('th-TH') : 'N/A'}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* --- (ส่วนแสดงรายการไฟล์ที่เพิ่มเข้ามา) --- */}
