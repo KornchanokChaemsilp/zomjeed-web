@@ -136,7 +136,7 @@ export default function LoginPage() {
           </div>
 
           {/* ส่วนฟอร์ม Username/Password (ยังไม่เชื่อม LIFF) */}
-          <form onSubmit={(e) => {
+          {/* <form onSubmit={(e) => {
               e.preventDefault(); 
               alert('ฟังก์ชันล็อกอินด้วยชื่อผู้ใช้ยังไม่เสร็จสมบูรณ์');
             }} className="space-y-6">
@@ -153,14 +153,14 @@ export default function LoginPage() {
                 เข้าสู่ระบบ
               </button>
             </div>
-          </form>
+          </form> */}
 
           {/* Separator */}
-          <div className="flex items-center justify-center">
+          {/* <div className="flex items-center justify-center">
             <div className="flex-grow border-t border-gray-400"></div>
             <span className="px-4 text-sm text-gray-500">หรือ</span>
             <div className="flex-grow border-t border-gray-400"></div>
-          </div>
+          </div> */}
 
           {/* Login with Line Button */}
           <div>
