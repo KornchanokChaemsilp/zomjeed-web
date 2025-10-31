@@ -217,19 +217,19 @@ export default function LoginPage() {
         {stats && !filesLoading && (
           <div className="grid grid-cols-2 gap-4">
             {/* Card: จำนวนไฟล์ */}
-            <div className="bg-white/70 p-4 rounded-lg shadow">
+            <div className="bg-gray-200 p-4 rounded-lg shadow">
               <div className="text-sm font-medium text-gray-500">จำนวนไฟล์ทั้งหมด</div>
               <div className="text-3xl font-bold text-sky-700">{stats.totalCount}</div>
             </div>
             
             {/* Card: ขนาดรวม */}
-            <div className="bg-white/70 p-4 rounded-lg shadow">
+            <div className="bg-gray-200 p-4 rounded-lg shadow">
               <div className="text-sm font-medium text-gray-500">ขนาดไฟล์รวม</div>
               <div className="text-3xl font-bold text-emerald-600">{stats.totalSizeMB} <span className="text-xl">MB</span></div>
             </div>
             
             {/* Card: ประเภทไฟล์ */}
-            <div className="col-span-2 bg-white/70 p-4 rounded-lg shadow">
+            <div className="col-span-2 bg-gray-200 p-4 rounded-lg shadow">
               <div className="text-sm font-medium text-gray-500">ประเภทไฟล์</div>
               {Object.keys(stats.fileTypes).length > 0 ? (
                 <ul className="list-disc list-inside mt-2">
@@ -245,7 +245,7 @@ export default function LoginPage() {
             </div>
 
             {/* Card: อัปเดตล่าสุด */}
-            <div className="col-span-2 bg-white/70 p-4 rounded-lg shadow">
+            <div className="col-span-2 bg-gray-200 p-4 rounded-lg shadow">
               <div className="text-sm font-medium text-gray-500">ไฟล์ล่าสุด</div>
               <div className="text-lg font-semibold text-gray-800">
                 {stats.lastModified ? new Date(stats.lastModified).toLocaleString('th-TH') : 'N/A'}
