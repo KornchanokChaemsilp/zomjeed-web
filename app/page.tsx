@@ -196,11 +196,11 @@ export default function LoginPage() {
         {profile ? (
           <>
             <img src={profile.pictureUrl} alt="Profile" className="w-24 h-24 rounded-full mx-auto" />
-            <p><strong>Display Name:</strong> {profile.displayName}</p>
-            <p><strong>User ID:</strong> {profile.userId}</p>
+            <p className="text-gray-800"><strong>Display Name:</strong> {profile.displayName}</p>
+            <p className="text-gray-800"><strong>User ID:</strong> {profile.userId}</p>
           </>
         ) : (
-          <p>กำลังโหลดข้อมูล...</p>
+          <p className="text-gray-800">กำลังโหลดข้อมูล...</p>
         )}
         <button
           onClick={handleLogout}
@@ -219,13 +219,13 @@ export default function LoginPage() {
             {/* Card: จำนวนไฟล์ */}
             <div className="bg-white/70 p-4 rounded-lg shadow">
               <div className="text-sm font-medium text-gray-500">จำนวนไฟล์ทั้งหมด</div>
-              <div className="text-3xl font-bold text-blue-600">{stats.totalCount}</div>
+              <div className="text-3xl font-bold text-sky-700">{stats.totalCount}</div>
             </div>
             
             {/* Card: ขนาดรวม */}
             <div className="bg-white/70 p-4 rounded-lg shadow">
               <div className="text-sm font-medium text-gray-500">ขนาดไฟล์รวม</div>
-              <div className="text-3xl font-bold text-green-600">{stats.totalSizeMB} <span className="text-xl">MB</span></div>
+              <div className="text-3xl font-bold text-emerald-600">{stats.totalSizeMB} <span className="text-xl">MB</span></div>
             </div>
             
             {/* Card: ประเภทไฟล์ */}
